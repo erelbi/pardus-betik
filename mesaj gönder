@@ -1,0 +1,22 @@
+#! /bin/bash
+echo "lütfen  kullanıcı ismini giriniz: "
+read host
+echo "lütfen  ip'yi  giriniz: "
+read  ip
+echo   "lütfen  şifreyi  giriniz: "
+read -s  pass
+
+echo "
+Mesajınızı girin
+"
+read  mesaj
+
+if `sshpass -p $pass ssh -X -o "StrictHostKeyChecking no" $host@$ip "DISPLAY=:0 notify-send BİLGİ-İŞLEM "  $mesaj  -u normal -t 5000 -i checkbox-checked-symbolic  `;
+then
+ echo " MESAJINIZ GÖNDERİLDİ " 
+else
+echo  "MESAJINIZ GÖNDERİLEMEDİ $ip kontrol ediniz"
+fi
+
+
+######er-el-bi#####
