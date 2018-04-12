@@ -1,0 +1,56 @@
+#!/bin/bash
+##########servisler########
+nfs=nfs-kernel-server
+samba=smbd
+web=apache2
+ftp=vsftd	
+ssh=sshd
+#sistem=systemctl --no-pager -l status 
+########mail#############
+mail=bilselergun@gmail.com
+mail1=hisahin@gmail.com
+########################
+CPUD=$(mpstat -P ALL)
+CPUX=$(top -b -n 1 | head -n 5  | tail -n 10)
+DATE=$(date "+%Y-%m-%d %H:%M:")
+RAM=$( free -m )
+CPUN=$(top -bn1 | grep "Cpu(s)" |            sed "s/.*, *\([0-9.]*\)%* id.*/\1/" |            awk '{print 100 - $1"%"}')
+DISK=$(df /dev/sda3)
+
+
+########################################
+
+if [ "`systemctl is-active $nfs `" != "active" ] 
+then 
+cat > /var/log/detaylı-log.txt  << EOF
+$DATE
+
+$CPUD 
+
+
+$RAM
+
+
+EOF
+
+#########################################
+cat > /var/log/service-log.txt << EOF
+İŞLEMCİ KULLANIMI
+----------------------------------------------------------------------------------------
+$CPUX
+
+DİSK KULLANIMI
+----------------------------------------------------------------------------------------
+$DISK
+
+############servis-durumu####################################
+
+EOF
+#systemctl --no-pager -l status  $nfs 
+service $nfs status | head -n 3  | tail -n 10 >> /var/log/service-log.txt
+#mail -a /var/log/detaylı-log.txt -s "$nfs çalışmıyor"   $mail $mail1 < /var/log/service-log.txt 
+cat /var/log/service-log.txt | mail -A "/var/log/detaylı-log.txt" -s  "$nfs çalışmıyor"   $mail $mail1 
+rm -rf /var/log/service-log.txt
+else
+exit 0
+fi
