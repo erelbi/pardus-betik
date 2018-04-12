@@ -1,0 +1,19 @@
+#!/bin/bash
+#hostname tanımlayınız $hostn
+hostn=$(cat /etc/hostname)
+
+
+echo "TANIMLADIĞINIZ HOSTNAME $hostn"
+
+echo "lütfen yeni hostname i giriniz: "
+read newhost
+
+sudo sed -i "s/$hostn/$newhost/g" /etc/hosts
+sudo sed -i "s/$hostn/$newhost/g" /etc/hostname
+
+echo "yeni hostname iniz $newhost"
+
+read -s -n 1 -p "Reboot için Lütfen bir tuşa basınız"
+reboot
+
+#debian9-pardus17.2
