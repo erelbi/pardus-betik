@@ -1,0 +1,52 @@
+#!/bin/bash
+ apt-get --yes install numlockx
+
+E='greeter-setup-script = /usr/bin/numlockx on'
+#########numlock adımları#############
+echo "Numlock adımları uygulanıyor"
+sed -i '80d' /etc/lightdm/lightdm.conf
+sed -i '79 a greeter-setup-script = /usr/bin/numlockx on' /etc/lightdm/lightdm.conf 
+
+if [ "`sed -n 80p /etc/lightdm/lightdm.conf  `" != "$E" ]; then
+
+echo "
+
+1.Adım başarısız lütfen pardus ekibi ile iletişime geçin
+
+"
+
+else
+
+echo "
+
+Lightdm ayarları yapılandırıldı
+
+"
+
+fi
+
+############açılış ayarı############
+echo "Açılış ayarı yapılandırılıyor"
+
+
+sed -i '12 a greeter-setup-script=/usr/bin/numlockx on' /usr/share/lightdm/lightdm.conf.d/01_debian.conf
+
+
+sed -i '14d'  /usr/share/lightdm/lightdm.conf.d/01_debian.conf
+
+
+
+if [ "`sed -n 13p   /usr/share/lightdm/lightdm.conf.d/01_debian.conf`" == "greeter-setup-script=/usr/bin/numlockx on" ]; then
+echo "
+      Konfigürasyonlar Tamamlandı 
+      Sistemi yeniden başlatarak test ediniz.
+
+     "
+else
+
+echo "
+     Kurulum Başarısız Lütfen Pardus Ekibi İle iletişime Geçiniz
+
+     "
+exit 0
+fi
