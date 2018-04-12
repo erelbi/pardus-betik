@@ -1,0 +1,32 @@
+#!/bin/bash
+#################servisi-tanımlayınız###############
+echo "örnek: cups.service"
+read -e -i "$SERVIS" -p "Lütfen servisin ismini giriniz: " input
+SERVIS="${input}"
+###################AYARLANIYORr########################
+mkdir -p /etc/systemd/system/$SERVIS.d
+cat > /etc/systemd/system/$SERVIS.d/override.conf <<EOF
+[Service]
+TimeoutStopSec=10
+EOF
+chmod 751 /etc/systemd/system/$SERVIS.d/
+chmod 644 /etc/systemd/system/$SERVIS.d/override.conf
+systemctl daemon-reload
+systemctl restart $SERVIS
+#############KONTROL-EDİLİYOR########################
+if [ "`systemctl show $SERVIS -p TimeoutStopUSec `" != "TimeoutStopUSec=10s" ] 
+then
+
+ echo "$SERVIS kapatılma ayarı yapılandırılamadı."
+
+else
+
+echo "       Kapatılma ayarı 10 saniyeye alındı. 
+     "
+echo " 
+       ###################################
+       ###########PARDUS-EKİBİ############
+       ###################################
+      "
+exit 0
+fi
