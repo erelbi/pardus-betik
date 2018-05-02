@@ -1,0 +1,15 @@
+#!/bin/bash
+
+ip=`ip -4 addr show eno1 | grep -oP "(?<=inet ).*(?=/)"`
+echo $ip
+
+
+v2=`arping -D -I eno1 -c 2 $ip  | grep Received | awk -F, '{ print $1 }' | awk '{ print $2 }'`
+if [ $v2 == 1 ]; then
+notify-send "ip çakışması mevcut"
+fi 
+
+# sudo apt-get install notify-osd
+#eno1=interface on device name
+#find device name #ip a
+#pardus 17.2 için ip çakışması durumunda masaüstünde uyarı mesajı vermektedir
