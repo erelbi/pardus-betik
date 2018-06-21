@@ -1,0 +1,17 @@
+#!/bin/bash
+if [[ $(id -u) == 0 ]] ; then echo "Lütfen Root olmadan Çalıştırın" ; exit 1 ; fi
+#v1 değeri interface ismini tanımlamaktadır. Biz ethernet bağlantısı kullandığımız için 3. sırayı seçtik. awk 'FNR == 3 {print} komutunun numarasını seçerek istediğiniz satırdaki interface numarasını alabilirsiniz.
+v1=`ip -o addr | awk '{split($4, a, "/"); print $2" : "a[1]}' |  awk -F, '{ print $1 }' | awk '{ print $1 }' | awk 'FNR == 3 {print}'`
+echo $v1
+
+#tanımlı interface deki ip numarasını tanımlamaktadır.
+ip=`ip -4 addr show $v1 | grep -oP "(?<=inet ).*(?=/)"`
+echo $ip
+
+#Duplikasyon olmadığı sürece değer 0 dır. o olmadığı sürece çakışma mevcuttur.
+v2=`arping -D -I $v1 -c 2 $ip  | grep Received | awk -F, '{ print $1 }' | awk '{ print $2 }'`
+if [ $v2 == 0 ]; then
+notify-send -t 3 "ip çakışması yok"
+else
+notify-send -t 3 "ip çakışması mevcut"
+fi 
