@@ -1,0 +1,55 @@
+#!/bin/bash
+echo "
+      ##################################################################
+      ##################################################################
+      1- ip yi girin
+      2- şifreyi girin
+      3- dizin ismini girin
+      ##################################################################
+      ##################################################################
+      ###########uzak sunucudaki dosyaları klasörünüze bağlar###########
+     "
+echo "ip yi girin"
+read  b  
+echo "$b yi girdiniz"
+usr=`awk -F: '{print $1,$3}' /etc/passwd | grep 1000 | awk 'NR==1{print $1}'`
+echo "root şifresini giriniz"
+password=''
+while IFS= read -r -s -n1 char; do
+  [[ -z $char ]] && { printf '\n'; break; } # ENTER pressed; output \n and brea$
+  if [[ $char == $'\x7f' ]]; then # backspace was pressed
+      # Remove last char from output variable.
+      [[ -n $password ]] && password=${password%?}
+      # Erase '*' to the left.
+      printf '\b \b'
+  else
+    # Add typed char to output variable.
+    password+=$char
+    # Print '*' in its stead.
+    printf '*'
+  fi
+done
+
+echo "dizin ismini giriniz"
+read a
+echo "$a dizin ismi"
+echo "Girilen ip den emin misiniz"
+read -r -p "Yes or no?" response
+if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
+ then 
+mkdir /home/$usr/Masaüstü/$a
+xc=`sshpass -p $password ssh   -o "StrictHostKeyChecking no" root@$b bash -s < /usr/local/bin/a.sh `
+echo "uzak sunucuya bağlanıyor bağlanıyor"
+echo -ne '#####                     (33%)\r'
+sleep 1
+echo -ne '#############             (66%)\r'
+sleep 1
+echo -ne '#######################   (100%)\r'
+echo -ne '\n'
+ sshfs -o password_stdin root@$b:/home/$xc /home/$usr/Masaüstü/$a <<< "$password"
+chmod 777  /home/$usr/Masaüstü/$a
+thunar /home/$usr/Masaüstü/$a
+ 
+else
+ exit 0
+fi
