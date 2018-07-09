@@ -1,0 +1,49 @@
+#!/bin/bash
+echo "BLOK SEÇİN"
+read  b  
+echo "10.16.$b.0-254 BAŞLIYOR"
+network=10.16.$b.
+#mesaj=Masaüstüne-yeni-dosya-gönderildi
+saat=`date "+GÜN: %m/%d/%y%nSAAT: %H:%M:%S"`
+
+k=`awk -F: '{print $1,$3}' /etc/passwd | grep 1000 | awk '{ print $1, $1000 }'`
+z=${k%?}
+cat > /home/$z/rapor"$b".txt <<EOF
+[GÖNDERİM RAPORU]                                                $saat
+##############################################################################
+EOF
+cat > /home/$z/hata-raporu"$b".txt <<EOF
+[HATA RAPORU]                                                    $saat
+##############################################################################
+EOF
+ 
+
+for host in {0..255}; do
+    ping  $network$host -c 1 -w 5  &>/dev/null;
+    [ $? -eq 0 ] && echo "$network$host ayakta"
+#sshpass -p "password" scp $1  -o StrictHostKeyChecking=no -r  drab@$network$host:/home/drab/Masaüstü
+#sshpass -p "password" scp -r -p  "StrictHostKeyChecking no" $1  drab@$network$host:/home/drab/Masaüstü    
+
+if [ $? -eq 0 ];then
+#sshpass -p 'password' scp -r -p  StrictHostKeyChecking=no $1  root@$network$host:/home/ortak01/Masaüstü
+#sshpass -p 'password' ssh -X  -o "StrictHostKeyChecking no" ortak01@$network$host "DISPLAY=:0 notify-send Bilgi-işlem"  $mesaj 
+sshpass -p 'password' ssh -o "StrictHostKeyChecking=no" ortak01@$network$host  'bash -s' < /usr/local/bin/mac.sh >> /home/ortak01/Masaüstü/mac-"$b"
+sshpass -p 'password' ssh -o "StrictHostKeyChecking=no" hizmet01@$network$host  'bash -s' < /usr/local/bin/mac.sh >> /home/ortak01/Masaüstü/mac-"$b"
+ echo $network$host gönderim başarılı >> /home/$z/rapor"$b".txt
+else
+[ $? -eq 1 ] && echo   $netwrok$host ayakta değil
+echo $network$host gönderim başarısız >> /home/$z/hata-raporu"$b".txt
+fi
+
+done
+########mach.sh#####################
+##!/bin/bash/
+##mac=`cat /sys/class/net/$(ip route show default | awk '/default/ {print $5}')/address`
+##host=`hostname -s`
+##echo  "$host","$mac" 
+##kernel=`hostnamectl | sed -n 7p`
+##ip=`ip -4 addr | grep -oP '(?<=inet\s)\d+(\.\d+){3}' | sed -n 2p`
+##id=`cat /etc/os-release | sed -n 3p`
+##echo "$kernel","$id","$ip" 
+##echo "______________________________________________________________________________"
+#######################################################################################
