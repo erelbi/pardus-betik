@@ -1,0 +1,28 @@
+#!/bin/bash
+mkdir -p /etc/opt/chrome/policies/managed
+touch  /etc/opt/chrome/policies/managed/blacklist.json
+
+arrDomains=()
+
+echo "CHROME da Engellenecek Siteleri yazınız :"
+
+echo "          KULLANIM KLAVUZU              "
+echo " örnek site ekleme :  deneme.com      "
+echo "Site yazımı bitince ENTER a basınız"
+
+echo "Yazma işlemi bitince  CTRL+D betikden çıkınız!"
+
+while read domain
+do
+    arrDomains+=(\"$domain\",)
+    # er-el-bi #
+done
+
+echo "Engellenen siteler"
+echo "Domain List : ${arrDomains[@]}" 
+
+cat >  /etc/opt/chrome/policies/managed/blacklist.json  <<EOF
+{
+  "URLBlacklist": [${arrDomains[@]}]  
+} 
+EOF
