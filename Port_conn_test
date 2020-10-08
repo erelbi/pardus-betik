@@ -1,0 +1,13 @@
+#!/bin/bash
+read -p "Enter ip adress: " IP
+array=( 80 443 22 53 88 123 139 389 445 464 636 )
+for port in "${array[@]}"
+do
+
+#echo quit |   telnet  $IP $port & sleep 2 && kill %1   2>/dev/null  |  grep  Connected
+if  echo quit |timeout 2 telnet   $IP $port </dev/null 2>&1 | grep -q Escape; then
+echo "$port : Connected"
+else
+echo "$port : no connection"
+fi
+done
