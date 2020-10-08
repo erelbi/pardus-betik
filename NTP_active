@@ -1,0 +1,55 @@
+#!/bin/bash
+CONFIG_FILE="/etc/systemd/timesyncd.conf"
+NTPSERVER=ip_address
+function status(){
+if [ $2 ==  0 ]
+then
+     echo "Working... | Command: $1"
+else
+     echo "Failed...."
+     echo "$1 will be  check it"
+     exit 1
+
+fi
+}
+
+function package_control()
+{
+dpkg -s $1 &>/dev/null
+if [ $? -eq  0 ] 
+ then
+     	echo "Package installed | Package Name : $1"\	
+ else
+     	apt install $1 -y 
+fi
+
+}
+
+package_control  ntpdate
+
+ntpdate 10.16.39.50 &>/dev/null
+
+if [ $? -eq 0 ]
+then
+ echo "ntp server working!"
+else
+ echo "ntp server connection failed"
+ echo  "ntp server checking"
+ nc -vz -u 10.16.39.50 123 &>/dev/null
+ if  [ $? -eq 0 ]
+ then
+ 	echo "ntp port open"
+	echo "Check ntp sever Command: ntpq -p " 
+ else
+ 	echo "ntp port close"
+ fi
+fi
+
+echo "turn off the timesynchd service"
+timedatectl set-ntp off
+status timedatectl $?
+sed  -i "s/#NTP=/NTP=$NTPSERVER/g"  $CONFIG_FILE
+systemctl restart 
+systemctl restart  systemd-timesyncd.service
+status systemd-timesyncd $?
+timedatectl show-timesync
