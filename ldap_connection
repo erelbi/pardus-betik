@@ -1,0 +1,116 @@
+#!/bin/bash
+
+ldap_ip=$1
+ldap_base=$2
+ldap_user=$3
+ldap_pass=$4
+ldap_vers=$5
+
+
+Package_list="libnss-ldap libpam-ldap ldap-utils"
+echo Package_list
+apt install $a -y
+function package_control() {
+  dpkg -s $1 &>/dev/null
+  if  [ $? -eq 0 ] ; then
+    echo "$1 installed" &&
+    apt purge $1 -y && debconf_clear $1 && apt autoremove -y
+  else
+    echo "$1 not installed"
+  fi
+}
+
+function debconf_clear() {
+  echo PURGE | debconf-communicate $1
+}
+
+
+for pac in $Package_list;
+do
+  package_control $pac
+done
+
+echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+## libnss-ldap&&libpam-ldap
+echo -e " \
+libnss-ldap libnss-ldap/dblogin boolean false
+libnss-ldap shared/ldapns/base-dn string $ldap_base
+libnss-ldap libnss-ldap/binddn string $ldap_user
+libnss-ldap libnss-ldap/dbrootlogin boolean true
+libnss-ldap libnss-ldap/override boolean true
+libnss-ldap shared/ldapns/ldap-server string $ldap_ip
+libnss-ldap libnss-ldap/confperm boolean false
+libnss-ldap libnss-ldap/rootbinddn string $ldap_user
+libnss-ldap shared/ldapns/ldap_version select $ldap_vers
+libnss-ldap libnss-ldap/nsswitch note
+libpam-ldap libpam-ldap/dblogin boolean false
+libpam-ldap libpam-ldap/dbrootlogin boolean true
+libpam-ldap libpam-ldap/override boolean true
+libpam-ldap libpam-ldap/pam_password string crypt
+libpam-ldap libpam-ldap/rootbinddn string $ldap_user
+libpam-ldap libpam-runtime/override boolean false \
+" | debconf-set-selections
+
+echo "Name: libnss-ldap/bindpw
+Template: libnss-ldap/bindpw
+Owners: libnss-ldap, libnss-ldap:amd64
+Name: libnss-ldap/rootbindpw
+Template: libnss-ldap/rootbindpw
+Value:
+Owners: libnss-ldap, libnss-ldap:amd64
+Flags: seen
+Name: libpam-ldap/bindpw
+Template: libpam-ldap/bindpw
+Owners: libpam-ldap, libpam-ldap:amd64
+Name: libpam-ldap/rootbindpw
+Template: libpam-ldap/rootbindpw
+Value:
+Owners: libpam-ldap, libpam-ldap:amd64
+Flags: seen
+Variables:
+ filename = /etc/pam_ldap.secret
+ package = libpam-ldap" >> /var/cache/debconf/passwords.dat
+
+echo $ldap_pass > /etc/pam_ldap.secret
+apt update
+apt-get install libpam-ldap libnss-ldap ldap-utils -y
+SUDO_FORCE_REMOVE=yes apt-get install sudo-ldap -y
+
+declare -i plineNum="$(grep  -n "passwd:" /etc/nsswitch.conf | head -n 1 | cut -d : -f1)"
+declare -i glineNum="$(grep  -n "group:" /etc/nsswitch.conf | head -n 1 | cut -d : -f1)"
+declare -i slineNum="$(grep  -n "shadow:" /etc/nsswitch.conf | head -n 1 | cut -d : -f1)"
+declare -i pass_pam_cmmn="$(grep  -n "try_first_pass" /etc/pam.d/common-password | head -n 1 | cut -d : -f1)"
+declare -i pass_pam_ssn="$(grep  -n "pam_mkhomedir.so" /etc/pam.d/common-session | head -n 1 | cut -d : -f1)"
+
+
+function delete_line() {
+  if [ $1  -ne  0 ]; then
+    sed -i "${1}d" $2
+  else
+    echo "not found key"
+  fi
+}
+
+function add_line() {
+  if [ $1  -ne  0 ]; then
+    NR=$1
+    number=$(( NR - 1 ))
+    sed -i "${number} a ${2}" $3
+  else
+    echo "error ${2}"
+  fi
+}
+
+delete_line $plineNum "/etc/nsswitch.conf"
+add_line $plineNum "passwd:        compat  systemd  ldap" "/etc/nsswitch.conf"
+delete_line $glineNum  "/etc/nsswitch.conf"
+add_line $glineNum "group:        compat  systemd  ldap" "/etc/nsswitch.conf"
+delete_line $slineNum "/etc/nsswitch.conf"
+add_line $slineNum  "shadow:        compat" "/etc/nsswitch.conf"
+delete_line $pass_pam_cmmn "/etc/pam.d/common-password"
+add_line $pass_pam_cmmn "password	[success=1 user_unknown=ignore default=die]	pam_ldap.so use_authtok try_first_pass"  "/etc/pam.d/common-password"
+delete_line $pass_pam_ssn "/etc/pam.d/common-session"
+echo  "session required pam_mkhomedir.so skel=/etc/skel umask=077" >> /etc/pam.d/common-session
+
+/etc/init.d/nscd restart
